@@ -20,24 +20,77 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPayments();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPayments();
+    });
   }
 
   Future<void> _loadPayments() async {
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final payments = await dbService.getPayments('1234567890');
-    
-    double total = 0;
-    for (var payment in payments) {
-      if (payment.status == 'completed') {
-        total += payment.amount;
+    try {
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      
+      // Имитация загрузки данных
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      final payments = await dbService.getPayments('1234567890');
+      
+      double total = 0;
+      for (var payment in payments) {
+        if (payment.status == 'completed') {
+          total += payment.amount;
+        }
       }
-    }
 
+      setState(() {
+        _payments = payments;
+        _totalPaid = total;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Ошибка загрузки платежей: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Показываем демо-данные при ошибке
+      _showDemoData();
+    }
+  }
+
+  void _showDemoData() {
+    final demoPayments = [
+      Payment(
+        id: 'payment_1',
+        accountNumber: '1234567890',
+        date: DateTime(2024, 1, 15, 14, 30),
+        amount: 3250.75,
+        method: 'Банковская карта',
+        status: 'completed',
+        transactionId: 'TXN123456',
+      ),
+      Payment(
+        id: 'payment_2',
+        accountNumber: '1234567890',
+        date: DateTime(2023, 12, 5, 9, 15),
+        amount: 3560.25,
+        method: 'Сбербанк-Онлайн',
+        status: 'completed',
+        transactionId: 'TXN789012',
+      ),
+      Payment(
+        id: 'payment_3',
+        accountNumber: '1234567890',
+        date: DateTime(2024, 2, 20, 16, 45),
+        amount: 1500.00,
+        method: 'Банковская карта',
+        status: 'pending',
+        transactionId: 'TXN345678',
+      ),
+    ];
+    
     setState(() {
-      _payments = payments;
-      _totalPaid = total;
-      _isLoading = false;
+      _payments = demoPayments;
+      _totalPaid = 6811.00; // Сумма двух завершенных платежей
     });
   }
 
@@ -131,11 +184,34 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     }
   }
 
+  void _showAddPaymentDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Новый платеж'),
+        content: const Text(
+          'В демо-режиме добавление новых платежей не доступно. '
+          'Для оплаты перейдите в раздел "Мои счета".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryBlue,
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _loadPayments,
               child: CustomScrollView(
@@ -197,9 +273,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
               ),
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Навигация на экран оплаты
-        },
+        onPressed: () => _showAddPaymentDialog(context),
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),

@@ -1,4 +1,3 @@
-// lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:iks_fokino_app/constants/colors.dart';
 import 'package:iks_fokino_app/models/user.dart';
@@ -6,6 +5,7 @@ import 'package:iks_fokino_app/screens/bills/bills_screen.dart';
 import 'package:iks_fokino_app/screens/bills/meter_reading_screen.dart';
 import 'package:iks_fokino_app/screens/payments/payment_history_screen.dart';
 import 'package:iks_fokino_app/screens/requests/requests_screen.dart';
+import 'package:iks_fokino_app/screens/auth/login_screen.dart';
 import 'package:iks_fokino_app/services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -27,26 +27,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   final List<Widget> _screens = [
-    const BillsScreen(), // ← Теперь правильно
+    const BillsScreen(),
     const PaymentHistoryScreen(),
     const MeterReadingScreen(),
     const RequestsScreen(),
   ];
-
-  // ... остальной код без изменений ...
 
   final List<String> _titles = [
     'Мои счета',
     'Платежи',
     'Показания',
     'Заявки',
-  ];
-
-  final List<IconData> _icons = [
-    Icons.receipt,
-    Icons.payments,
-    Icons.speed,
-    Icons.request_quote,
   ];
 
   void _onItemTapped(int index) {
@@ -56,10 +47,112 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _logout() async {
-    await _authService.logout();
-    if (mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    try {
+      await _authService.logout();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      print('Ошибка при выходе: $e');
     }
+  }
+
+  void _showComingSoonDialog(BuildContext context, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: const Text('Данный раздел находится в разработке. '
+            'В будущих версиях приложения функционал будет добавлен.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('О приложении'),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'ИКС Фокино - Личный кабинет потребителя',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              SizedBox(height: 10),
+              Text('Версия: 1.0.0 (Демо)'),
+              Text('Разработчик: ИКС-Фокино'),
+              SizedBox(height: 10),
+              Text(
+                'Приложение для управления услугами теплоснабжения '
+                'и горячего водоснабжения на территории ЗАТО Фокино.',
+              ),
+              SizedBox(height: 10),
+              Text('© 2024 ИКС-Фокино. Все права защищены.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Закрыть'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showContactsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Контакты'),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'ООО «ИКС – Фокино»',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              Text('Телефон: +7 4233 927 927'),
+              Text('Адрес: г. Фокино, Приморский край'),
+              SizedBox(height: 10),
+              Text('Часы работы:'),
+              Text('Пн-Пт: 9:00-18:00'),
+              Text('Сб: 9:00-14:00'),
+              Text('Вс: выходной'),
+              SizedBox(height: 10),
+              Text('Аварийная служба: круглосуточно'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Закрыть'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -82,22 +175,22 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedItemColor: AppColors.primaryBlue,
         unselectedItemColor: AppColors.gray,
         onTap: _onItemTapped,
-        items: [
+        items: const [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.receipt),
-            label: _titles[0],
+            icon: Icon(Icons.receipt),
+            label: 'Счета',
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.payments),
-            label: _titles[1],
+            icon: Icon(Icons.payments),
+            label: 'Платежи',
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.speed),
-            label: _titles[2],
+            icon: Icon(Icons.speed),
+            label: 'Показания',
           ),
           BottomNavigationBarItem(
-            icon: const Icon(Icons.request_quote),
-            label: _titles[3],
+            icon: Icon(Icons.request_quote),
+            label: 'Заявки',
           ),
         ],
       ),
@@ -110,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
               currentAccountPicture: CircleAvatar(
                 backgroundColor: AppColors.primaryBlue,
                 child: Text(
-                  _user?.name.substring(0, 1) ?? 'П',
+                  _user?.name.isNotEmpty == true ? _user!.name.substring(0, 1) : 'П',
                   style: const TextStyle(
                     fontSize: 24,
                     color: Colors.white,
@@ -125,21 +218,24 @@ class _HomeScreenState extends State<HomeScreen> {
               leading: const Icon(Icons.person),
               title: const Text('Личные данные'),
               onTap: () {
-                // Реализация экрана личных данных
+                Navigator.pop(context);
+                _showComingSoonDialog(context, 'Личные данные');
               },
             ),
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text('Объекты'),
               onTap: () {
-                // Реализация экрана объектов
+                Navigator.pop(context);
+                _showComingSoonDialog(context, 'Объекты');
               },
             ),
             ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Настройки'),
               onTap: () {
-                // Реализация экрана настроек
+                Navigator.pop(context);
+                _showComingSoonDialog(context, 'Настройки');
               },
             ),
             const Divider(),
@@ -147,7 +243,8 @@ class _HomeScreenState extends State<HomeScreen> {
               leading: const Icon(Icons.info),
               title: const Text('О приложении'),
               onTap: () {
-                // Реализация экрана "О приложении"
+                Navigator.pop(context);
+                _showAboutDialog(context);
               },
             ),
             ListTile(
@@ -155,8 +252,20 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Контакты'),
               subtitle: const Text('+7 4233 927 927'),
               onTap: () {
-                // Реализация экрана контактов
+                Navigator.pop(context);
+                _showContactsDialog(context);
               },
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Версия 1.0.0 • Демо-режим',
+                style: TextStyle(
+                  color: AppColors.gray,
+                  fontSize: 12,
+                ),
+              ),
             ),
           ],
         ),

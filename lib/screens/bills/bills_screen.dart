@@ -1,4 +1,3 @@
-// lib/screens/bills/bills_screen.dart
 import 'package:flutter/material.dart';
 import 'package:iks_fokino_app/constants/colors.dart';
 import 'package:iks_fokino_app/models/bill.dart';
@@ -22,24 +21,72 @@ class _BillsScreenState extends State<BillsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadBills();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadBills();
+    });
   }
 
   Future<void> _loadBills() async {
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final bills = await dbService.getBills('1234567890');
-    
-    double totalDebt = 0;
-    for (var bill in bills) {
-      if (bill.status == 'pending' || bill.status == 'overdue') {
-        totalDebt += bill.total;
+    try {
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      
+      // Имитация загрузки данных
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      final bills = await dbService.getBills('1234567890');
+      
+      double totalDebt = 0;
+      for (var bill in bills) {
+        if (bill.status == 'pending' || bill.status == 'overdue') {
+          totalDebt += bill.total;
+        }
       }
-    }
 
+      setState(() {
+        _bills = bills;
+        _totalDebt = totalDebt;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Ошибка загрузки счетов: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      
+      // Показываем демо-данные при ошибке
+      _showDemoData();
+    }
+  }
+
+  void _showDemoData() {
+    final demoBills = [
+      Bill(
+        id: 'bill_1',
+        accountNumber: '1234567890',
+        period: DateTime(2024, 1, 1),
+        amount: 3250.75,
+        previousBalance: 0,
+        total: 3250.75,
+        dueDate: DateTime(2024, 2, 10),
+        status: 'paid',
+        items: [],
+      ),
+      Bill(
+        id: 'bill_2',
+        accountNumber: '1234567890',
+        period: DateTime(2024, 2, 1),
+        amount: 2980.50,
+        previousBalance: 0,
+        total: 2980.50,
+        dueDate: DateTime(2024, 3, 10),
+        status: 'pending',
+        items: [],
+      ),
+    ];
+    
     setState(() {
-      _bills = bills;
-      _totalDebt = totalDebt;
-      _isLoading = false;
+      _bills = demoBills;
+      _totalDebt = 2980.50;
     });
   }
 
@@ -114,7 +161,11 @@ class _BillsScreenState extends State<BillsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryBlue,
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _loadBills,
               child: CustomScrollView(
@@ -151,7 +202,13 @@ class _BillsScreenState extends State<BillsScreen> {
                           if (_totalDebt > 0) const SizedBox(height: 10),
                           if (_totalDebt > 0)
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                // Навигация на экран оплаты всей задолженности
+                                _showPaymentOptions(context, _bills.firstWhere(
+                                  (b) => b.status == 'pending',
+                                  orElse: () => _bills.first,
+                                ));
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.errorRed,
                                 foregroundColor: Colors.white,

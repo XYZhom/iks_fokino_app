@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iks_fokino_app/constants/colors.dart';
 import 'package:iks_fokino_app/models/meter_reading.dart';
-import 'package:iks_fokino_app/services/database_service.dart';
-import 'package:iks_fokino_app/widgets/meter_input_widget.dart'; // ← Исправленный импорт
-import 'package:provider/provider.dart';
+import 'package:iks_fokino_app/widgets/meter_input_widget.dart';
 import 'package:intl/intl.dart';
 
 class MeterReadingScreen extends StatefulWidget {
@@ -60,11 +58,34 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
   }
 
   Future<void> _loadHistory() async {
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
-    // Для демо используем первый счетчик
-    final history = await dbService.getMeterReadings('ТР-123456');
+    // Демо-данные вместо реальной БД
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    final demoHistory = [
+      MeterReading(
+        id: 'reading_1',
+        meterNumber: 'ТР-123456',
+        serviceType: 'Счетчик отопления',
+        previousReading: 120.45,
+        currentReading: 125.67,
+        readingDate: DateTime(2023, 12, 20),
+        submissionDate: DateTime(2023, 12, 20, 10, 30),
+        status: 'verified',
+      ),
+      MeterReading(
+        id: 'reading_2',
+        meterNumber: 'ВТ-789012',
+        serviceType: 'Счетчик ГВС',
+        previousReading: 42.15,
+        currentReading: 45.23,
+        readingDate: DateTime(2023, 12, 20),
+        submissionDate: DateTime(2023, 12, 20, 10, 32),
+        status: 'verified',
+      ),
+    ];
+
     setState(() {
-      _history = history;
+      _history = demoHistory;
     });
   }
 
@@ -84,13 +105,14 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
 
     setState(() => _isSubmitting = true);
 
-    final dbService = Provider.of<DatabaseService>(context, listen: false);
     final now = DateTime.now();
 
     try {
+      final newReadings = <MeterReading>[];
+
       for (var meter in _meters) {
         final controller = _controllers[meter['id']]!;
-        final currentReading = double.parse(controller.text);
+        final currentReading = double.tryParse(controller.text) ?? 0;
 
         if (currentReading < _previousReadings[meter['id']]!) {
           // Показания не могут быть меньше предыдущих
@@ -111,7 +133,8 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
               ),
             );
           }
-          continue;
+          setState(() => _isSubmitting = false);
+          return;
         }
 
         final reading = MeterReading(
@@ -125,8 +148,16 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
           status: 'submitted',
         );
 
-        await dbService.submitMeterReading(reading);
+        newReadings.add(reading);
+        
+        // Обновляем предыдущие показания для следующего месяца
+        _previousReadings[meter['id']] = currentReading;
       }
+
+      // Добавляем новые показания в историю
+      setState(() {
+        _history.insertAll(0, newReadings);
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -140,9 +171,6 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
         for (var controller in _controllers.values) {
           controller.clear();
         }
-
-        // Обновляем историю
-        await _loadHistory();
       }
     } catch (e) {
       if (mounted) {
@@ -228,9 +256,12 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: _isSubmitting
-                          ? const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
                               ),
                             )
                           : const Text(
@@ -267,7 +298,7 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Показания: ${reading.previousReading} → ${reading.currentReading}',
+                                'Показания: ${reading.previousReading} → ${reading.currentReading} ${_meters.firstWhere((m) => m['number'] == reading.meterNumber)['unit']}',
                               ),
                               Text(
                                 'Дата: ${reading.formattedSubmissionDate}',
