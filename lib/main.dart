@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:iks_fokino_app/app.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'app.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Инициализация локализации для русского языка
+  await initializeDateFormatting('ru_RU', null);
+  
   runApp(const IKSFokinoApp());
 }

@@ -7,6 +7,10 @@ import 'package:iks_fokino_app/screens/payments/payment_history_screen.dart';
 import 'package:iks_fokino_app/screens/requests/requests_screen.dart';
 import 'package:iks_fokino_app/screens/auth/login_screen.dart';
 import 'package:iks_fokino_app/services/auth_service.dart';
+import 'package:iks_fokino_app/screens/profile/personal_data_screen.dart';
+import 'package:iks_fokino_app/screens/profile/objects_screen.dart';
+import 'package:iks_fokino_app/screens/profile/settings_screen.dart';
+import 'package:iks_fokino_app/screens/profile/about_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -194,82 +198,108 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            UserAccountsDrawerHeader(
-              accountName: Text(_user?.name ?? 'Пользователь'),
-              accountEmail: Text(_user?.phone ?? ''),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: AppColors.primaryBlue,
-                child: Text(
-                  _user?.name.isNotEmpty == true ? _user!.name.substring(0, 1) : 'П',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              decoration: const BoxDecoration(
-                color: AppColors.primaryBlue,
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Личные данные'),
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoonDialog(context, 'Личные данные');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Объекты'),
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoonDialog(context, 'Объекты');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Настройки'),
-              onTap: () {
-                Navigator.pop(context);
-                _showComingSoonDialog(context, 'Настройки');
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.info),
-              title: const Text('О приложении'),
-              onTap: () {
-                Navigator.pop(context);
-                _showAboutDialog(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.phone),
-              title: const Text('Контакты'),
-              subtitle: const Text('+7 4233 927 927'),
-              onTap: () {
-                Navigator.pop(context);
-                _showContactsDialog(context);
-              },
-            ),
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+          drawer: Drawer(
+      child: Column(
+        children: [
+          UserAccountsDrawerHeader(
+            accountName: Text(_user?.name ?? 'Пользователь'),
+            accountEmail: Text(_user?.phone ?? ''),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: AppColors.primaryBlue,
               child: Text(
-                'Версия 1.0.0 • Демо-режим',
-                style: TextStyle(
-                  color: AppColors.gray,
-                  fontSize: 12,
+                _user?.name.isNotEmpty == true ? _user!.name.substring(0, 1) : 'П',
+                style: const TextStyle(
+                  fontSize: 24,
+                  color: Colors.white,
                 ),
               ),
             ),
-          ],
-        ),
+            decoration: const BoxDecoration(
+              color: AppColors.primaryBlue,
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: const Text('Личные данные'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PersonalDataScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Объекты'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ObjectsScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Настройки'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.info),
+            title: const Text('О приложении'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AboutScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.phone),
+            title: const Text('Контакты'),
+            subtitle: const Text('+7 4233 927 927'),
+            onTap: () {
+              Navigator.pop(context);
+              // Можно открыть AboutScreen или отдельный экран контактов
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AboutScreen(),
+                ),
+              );
+            },
+          ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Версия 1.0.0 • Демо-режим',
+              style: TextStyle(
+                color: AppColors.gray,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
       ),
+    ),
     );
   }
 }

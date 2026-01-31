@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iks_fokino_app/constants/colors.dart';
+import 'package:iks_fokino_app/services/database_service.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class RequestsScreen extends StatefulWidget {
@@ -15,6 +17,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   String _selectedType = 'Консультация';
+  bool _isLoading = true;
 
   final List<String> _requestTypes = [
     'Аварийная служба',
@@ -27,37 +30,136 @@ class _RequestsScreenState extends State<RequestsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRequests();
+    _addressController.text = 'г. Фокино, ул. Ленина, д. 10, кв. 25';
+    _phoneController.text = '+79123456789';
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRequests();
+    });
   }
 
-  void _loadRequests() {
-    // Демо-заявки
-    _requests = [
-      {
-        'id': '1',
-        'type': 'Аварийная служба',
-        'description': 'Протечка в подвале',
-        'date': DateTime.now().subtract(const Duration(hours: 2)),
-        'status': 'В работе',
-        'priority': 'Высокий',
-      },
-      {
-        'id': '2',
-        'type': 'Техническое обслуживание',
-        'description': 'Проверка счетчиков',
-        'date': DateTime.now().subtract(const Duration(days: 1)),
-        'status': 'Завершено',
-        'priority': 'Средний',
-      },
-      {
-        'id': '3',
-        'type': 'Консультация',
-        'description': 'Вопрос по начислению платежей',
-        'date': DateTime.now().subtract(const Duration(days: 3)),
+  Future<void> _loadRequests() async {
+    try {
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      
+      // Загружаем заявки из базы данных
+      final requests = await dbService.getRequests();
+      
+      if (requests.isEmpty) {
+        // Если в БД нет заявок, загружаем демо-данные
+        _loadDemoRequests();
+      } else {
+        setState(() {
+          _requests = requests.map((request) {
+            return {
+              'id': request['id'],
+              'type': request['type'],
+              'description': request['description'],
+              'address': request['address'],
+              'contactPhone': request['contactPhone'],
+              'date': DateTime.parse(request['date']),
+              'status': request['status'],
+              'priority': request['priority'],
+            };
+          }).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Ошибка загрузки заявок: $e');
+      _loadDemoRequests();
+    }
+  }
+
+  void _loadDemoRequests() {
+    setState(() {
+      _requests = [
+        {
+          'id': '1',
+          'type': 'Аварийная служба',
+          'description': 'Протечка в подвале',
+          'address': 'г. Фокино, ул. Ленина, д. 10',
+          'contactPhone': '+79123456789',
+          'date': DateTime.now().subtract(const Duration(hours: 2)),
+          'status': 'В работе',
+          'priority': 'Высокий',
+        },
+        {
+          'id': '2',
+          'type': 'Техническое обслуживание',
+          'description': 'Проверка счетчиков',
+          'address': 'г. Фокино, ул. Ленина, д. 10',
+          'contactPhone': '+79123456789',
+          'date': DateTime.now().subtract(const Duration(days: 1)),
+          'status': 'Завершено',
+          'priority': 'Средний',
+        },
+        {
+          'id': '3',
+          'type': 'Консультация',
+          'description': 'Вопрос по начислению платежей',
+          'address': 'г. Фокино, ул. Ленина, д. 10',
+          'contactPhone': '+79123456789',
+          'date': DateTime.now().subtract(const Duration(days: 3)),
+          'status': 'Новый',
+          'priority': 'Низкий',
+        },
+      ];
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _createRequest() async {
+    if (_descriptionController.text.isEmpty || 
+        _addressController.text.isEmpty || 
+        _phoneController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Заполните все поля'),
+          backgroundColor: AppColors.warningOrange,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      
+      final newRequest = {
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'type': _selectedType,
+        'description': _descriptionController.text,
+        'address': _addressController.text,
+        'contactPhone': _phoneController.text,
+        'date': DateTime.now().toIso8601String(),
         'status': 'Новый',
-        'priority': 'Низкий',
-      },
-    ];
+        'priority': _getPriorityByType(_selectedType),
+      };
+
+      // Сохраняем в базу данных
+      await dbService.saveRequest(newRequest);
+
+      // Обновляем список
+      await _loadRequests();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Заявка успешно создана'),
+          backgroundColor: AppColors.successGreen,
+        ),
+      );
+
+      // Очищаем поля
+      _descriptionController.clear();
+    } catch (e) {
+      print('Ошибка сохранения заявки: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка при создании заявки: $e'),
+          backgroundColor: AppColors.errorRed,
+        ),
+      );
+    }
   }
 
   @override
@@ -128,11 +230,16 @@ class _RequestsScreenState extends State<RequestsScreen> {
   }
 
   Widget _buildRequestsList() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.primaryBlue,
+        ),
+      );
+    }
+
     return RefreshIndicator(
-      onRefresh: () async {
-        _loadRequests();
-        setState(() {});
-      },
+      onRefresh: _loadRequests,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _requests.length,
@@ -267,46 +374,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                if (_descriptionController.text.isEmpty || 
-                    _addressController.text.isEmpty || 
-                    _phoneController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Заполните все поля'),
-                      backgroundColor: AppColors.warningOrange,
-                    ),
-                  );
-                  return;
-                }
-
-                final newRequest = {
-                  'id': DateTime.now().millisecondsSinceEpoch.toString(),
-                  'type': _selectedType,
-                  'description': _descriptionController.text,
-                  'address': _addressController.text,
-                  'contactPhone': _phoneController.text,
-                  'date': DateTime.now(),
-                  'status': 'Новый',
-                  'priority': _getPriorityByType(_selectedType),
-                };
-
-                setState(() {
-                  _requests.insert(0, newRequest);
-                });
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Заявка успешно создана'),
-                    backgroundColor: AppColors.successGreen,
-                  ),
-                );
-
-                // Очищаем поля
-                _descriptionController.clear();
-                _addressController.clear();
-                _phoneController.clear();
-              },
+              onPressed: _createRequest,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryBlue,
                 foregroundColor: Colors.white,

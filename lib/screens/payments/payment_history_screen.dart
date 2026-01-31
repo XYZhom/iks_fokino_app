@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iks_fokino_app/constants/colors.dart';
 import 'package:iks_fokino_app/models/payment.dart';
+import 'package:iks_fokino_app/screens/payments/payment_detail_screen.dart';
 import 'package:iks_fokino_app/services/database_service.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -95,49 +96,59 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 
   Widget _buildPaymentCard(Payment payment) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      child: ListTile(
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: AppColors.primaryBlue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentDetailScreen(payment: payment),
           ),
-          child: Icon(
-            _getMethodIcon(payment.method),
-            color: AppColors.primaryBlue,
-          ),
-        ),
-        title: Text(
-          payment.formattedAmount,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(payment.method),
-            Text(
-              payment.formattedDate,
-              style: const TextStyle(fontSize: 12),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        child: ListTile(
+          leading: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: AppColors.primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-          ],
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: _getStatusColor(payment.status).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            child: Icon(
+              _getMethodIcon(payment.method),
+              color: AppColors.primaryBlue,
+            ),
           ),
-          child: Text(
-            _getStatusText(payment.status),
-            style: TextStyle(
-              color: _getStatusColor(payment.status),
-              fontSize: 12,
+          title: Text(
+            payment.formattedAmount,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(payment.method),
+              Text(
+                payment.formattedDate,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: _getStatusColor(payment.status).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              _getStatusText(payment.status),
+              style: TextStyle(
+                color: _getStatusColor(payment.status),
+                fontSize: 12,
+              ),
             ),
           ),
         ),
@@ -182,25 +193,6 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       default:
         return 'Неизвестно';
     }
-  }
-
-  void _showAddPaymentDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Новый платеж'),
-        content: const Text(
-          'В демо-режиме добавление новых платежей не доступно. '
-          'Для оплаты перейдите в раздел "Мои счета".',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -272,12 +264,6 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                 ],
               ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddPaymentDialog(context),
-        backgroundColor: AppColors.primaryBlue,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 }

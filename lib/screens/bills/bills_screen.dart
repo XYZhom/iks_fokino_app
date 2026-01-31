@@ -5,6 +5,7 @@ import 'package:iks_fokino_app/screens/bills/bill_detail_screen.dart';
 import 'package:iks_fokino_app/services/database_service.dart';
 import 'package:iks_fokino_app/widgets/bill_card.dart';
 import 'package:provider/provider.dart';
+import 'package:iks_fokino_app/screens/payments/payment_screen.dart';
 
 class BillsScreen extends StatefulWidget {
   const BillsScreen({super.key});
@@ -91,6 +92,12 @@ class _BillsScreenState extends State<BillsScreen> {
   }
 
   void _showPaymentOptions(BuildContext context, Bill bill) {
+    Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => PaymentScreen(bill: bill),
+    ),
+  );
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(

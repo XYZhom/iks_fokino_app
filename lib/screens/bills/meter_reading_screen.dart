@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iks_fokino_app/constants/colors.dart';
 import 'package:iks_fokino_app/models/meter_reading.dart';
+import 'package:iks_fokino_app/services/database_service.dart';
 import 'package:iks_fokino_app/widgets/meter_input_widget.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class MeterReadingScreen extends StatefulWidget {
@@ -23,7 +25,9 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
   void initState() {
     super.initState();
     _initializeMeters();
-    _loadHistory();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHistory();
+    });
   }
 
   void _initializeMeters() {
@@ -58,9 +62,34 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
   }
 
   Future<void> _loadHistory() async {
-    // Демо-данные вместо реальной БД
-    await Future.delayed(const Duration(milliseconds: 300));
-    
+    try {
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      
+      // Загружаем историю из базы данных
+      final history = await dbService.getMeterReadings('ТР-123456');
+      
+      if (history.isNotEmpty) {
+        // Обновляем предыдущие показания на основе последней записи
+        final latestReading = history.first;
+        for (var meter in _meters) {
+          if (meter['number'] == latestReading.meterNumber) {
+            _previousReadings[meter['id']] = latestReading.currentReading;
+          }
+        }
+      }
+
+      setState(() {
+        _history = history;
+      });
+    } catch (e) {
+      print('Ошибка загрузки истории показаний: $e');
+      
+      // Загружаем демо-данные при ошибке
+      _loadDemoHistory();
+    }
+  }
+
+  void _loadDemoHistory() {
     final demoHistory = [
       MeterReading(
         id: 'reading_1',
@@ -105,6 +134,7 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
 
     setState(() => _isSubmitting = true);
 
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
     final now = DateTime.now();
 
     try {
@@ -148,6 +178,8 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
           status: 'submitted',
         );
 
+        // Сохраняем в базу данных
+        await dbService.saveMeterReading(reading);
         newReadings.add(reading);
         
         // Обновляем предыдущие показания для следующего месяца
@@ -239,7 +271,7 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
                       meterName: meter['name'],
                       meterNumber: meter['number'],
                       unit: meter['unit'],
-                      previousReading: meter['previous'],
+                      previousReading: _previousReadings[meter['id']]!,
                       controller: _controllers[meter['id']]!,
                     ),
 
@@ -290,6 +322,15 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
                     )
                   else
                     ..._history.map((reading) {
+                      // Находим единицу измерения для этого счетчика
+                      String unit = 'ед.';
+                      for (var meter in _meters) {
+                        if (meter['number'] == reading.meterNumber) {
+                          unit = meter['unit'];
+                          break;
+                        }
+                      }
+                      
                       return Card(
                         margin: const EdgeInsets.symmetric(vertical: 5),
                         child: ListTile(
@@ -298,7 +339,7 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Показания: ${reading.previousReading} → ${reading.currentReading} ${_meters.firstWhere((m) => m['number'] == reading.meterNumber)['unit']}',
+                                'Показания: ${reading.previousReading} → ${reading.currentReading} $unit',
                               ),
                               Text(
                                 'Дата: ${reading.formattedSubmissionDate}',
