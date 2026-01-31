@@ -1,16 +1,26 @@
-# iks_fokino_app
+# ИКС Фокино - Личный кабинет потребителя
 
-A new Flutter project.
+Мобильное приложение для потребителей услуг теплоснабжения и ГВС компании "ИКС-Фокино".
 
-## Getting Started
+## Возможности приложения
 
-This project is a starting point for a Flutter application.
+- ✅ Авторизация по номеру телефона с SMS-подтверждением
+- ✅ Просмотр текущих счетов и задолженности
+- ✅ Ввод показаний счетчиков (ручной режим)
+- ✅ История платежей и статусы операций
+- ✅ Создание и отслеживание заявок
+- ✅ Локальное хранение данных (SQLite)
+- ✅ Оффлайн-работа с последующей синхронизацией
 
-A few resources to get you started if this is your first Flutter project:
+## Технический стек
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **Flutter 3.0+** (Dart с null-safety)
+- **SQLite** (локальная база данных)
+- **Provider** (управление состоянием)
+- **Material Design 3**
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Установка и запуск
+
+1. Убедитесь, что у вас установлен Flutter SDK версии 3.0 или выше:
+   ```bash
+   flutter --version
